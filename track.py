@@ -182,6 +182,7 @@ if __name__ == '__main__':
     parser.add_argument('--save-images', action='store_true', help='save tracking results (image)')
     parser.add_argument('--save-videos', action='store_true', help='save tracking results (video)')
     parser.add_argument('--train-mot17', action='store_true', help='tracking buffer')
+    parser.add_argument('--train-mot17-2', action='store_true', help='tracking buffer')
     parser.add_argument('--val-mot17', action='store_true', help='tracking buffer')
     opt = parser.parse_args()
     print(opt, end='\n\n')
@@ -191,13 +192,23 @@ if __name__ == '__main__':
                       MOT17-04-SDP
                       MOT17-05-SDP
                       MOT17-09-SDP
-                      MOT17-10-SDP'''
+                      MOT17-10-SDP
+                      MOT17-11-SDP
+                      MOT17-13-SDP'''
+        data_root = 'MOT17/images/train'
+    elif opt.train_mot17_2:
+        seqs_str = '''MOT17-02-SDP'''
         data_root = 'MOT17/images/train'
     
     if opt.val_mot17:
-        seqs_str = '''MOT17-11-SDP
-                      MOT17-13-SDP'''
-        data_root = 'MOT17/images/val'
+        seqs_str = '''MOT17-01-SDP
+                      MOT17-03-SDP
+                      MOT17-06-SDP
+                      MOT17-07-SDP
+                      MOT17-08-SDP
+                      MOT17-12-SDP
+                      MOT17-14-SDP'''
+        data_root = 'MOT17/images/test'
 
     seqs = [seq.strip() for seq in seqs_str.split()]
     main(opt,

@@ -46,8 +46,8 @@ def train(
     dataset_root = data_config['root']
     f.close()
 
-    transforms = T.Compose([[T.ToTensor()],
-                           T.Lambda(globalEqualization)])
+    transforms = T.Compose([
+        T.ToTensor()])
     # Get dataloader
     dataset = JointDataset(dataset_root, trainset_paths, img_size, augment=True, transforms=transforms)
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True,
@@ -68,14 +68,16 @@ def train(
         model.cuda().train()
 
         # Set optimizer
-        optimizer = torch.optim.AdamW(filter(lambda x: x.requires_grad, model.parameters()), lr=opt.lr)
+        optimizer = torch.optim.AdamW(filter(lambda x: x.requires_grad, model.parameters()), lr=opt.lr,
+                                      weight_decay=0.01)
 
         start_epoch = checkpoint['epoch'] + 1
         if checkpoint['optimizer'] is not None:
-                optimizer.load_state_dict(checkpoint['optimizer'])
+            optimizer.load_state_dict(checkpoint['optimizer'])
+            optimizer.param_groups[0]['lr'] = opt.lr
         del checkpoint  # current, saved
 
-    else:
+    elif opt.pretrain:
         # Initialize model with backbone (optional)
         if cfg.endswith('swin_b.cfg'):
             load_swin_weights(model, osp.join(weights_from, 'swinb.pth'))
@@ -89,14 +91,19 @@ def train(
         #                             weight_decay=1e-4)
         optimizer = torch.optim.AdamW(filter(lambda x: x.requires_grad, model.parameters()), lr=opt.lr,
                                       weight_decay=0.01)
+    else:
+        model.cuda().train()
+        optimizer = torch.optim.AdamW(filter(lambda x: x.requires_grad, model.parameters()), lr=opt.lr,
+                                      weight_decay=0.01)
 
     model = torch.nn.DataParallel(model)
     # Set scheduler
     # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=5)
+    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=10, factor=0.5)
     # scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer,
     #                                                  milestones=[int(opt.epochs - 9), int(opt.epochs - 3)],
     #                                                  gamma=0.1)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, epochs)
 
     # An important trick for detection: freeze bn during fine-tuning
     if not opt.unfreeze_bn:
@@ -124,6 +131,17 @@ def train(
         rloss = defaultdict(float)  # running loss
         optimizer.zero_grad()
         for i, (imgs, targets, _, _, targets_len) in enumerate(dataloader):
+            # print(imgs.shape)
+        #     for x in imgs:
+        #         time.sleep(2)
+        #         transform = T.ToPILImage()
+        #         print(imgs)
+
+        #         img = transform(x)
+        #         img.show()
+        #     continue
+        # exit(0)
+        
             if sum([len(x) for x in targets]) < 1:  # if no targets continue
                 continue
 
@@ -201,7 +219,8 @@ def train(
                         'nT_loss': rloss['nT'], "lr": optimizer.param_groups[0]["lr"], "epoch_time": time.time()-t0})
 
         # Call scheduler.step() after opimizer.step() with pytorch > 1.1.0
-        scheduler.step(loss)
+        scheduler.step()
+
     
     print('Epoch,   mAP,   R,   P:')
     for row in final_result:
@@ -237,6 +256,7 @@ if __name__ == '__main__':
     parser.add_argument('--unfreeze-bn', action='store_true', help='unfreeze bn')
     parser.add_argument('--num-worker', type=int, default=8, help='Data loader')
     parser.add_argument('--nowandb', action='store_true', help='disable wandb')
+    parser.add_argument('--pretrain', action='store_true', help='use prertained weights')
     parser.add_argument('--watermark', type=str, default='Swin_JDE', help='watermark for wandb')
     parser.add_argument('--iou-thres', type=float, default=0.5, help='iou threshold required to qualify as detected')
     parser.add_argument('--conf-thres', type=float, default=0.5, help='object confidence threshold')
@@ -251,11 +271,11 @@ if __name__ == '__main__':
     opt = parser.parse_args()
     timme = strftime("%Y_%m_%d_%H_%M_%S", localtime())
 
-    usewandb = ~opt.nowandb
+    usewandb = opt.nowandb == False
     if usewandb:
         import wandb
         watermar = opt.watermark
-        wandb.init(project="SWIN-JDE", name=watermar+timme)
+        wandb.init(project="SWIN-JDE", name=watermar + '_'+ timme)
         wandb.config.update(opt)
 
     init_seeds()

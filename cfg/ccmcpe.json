@@ -2,14 +2,14 @@
     "root":"",
     "train":
     {
-        "mot17":"./data/mot17.train"
+        "mot17":"./data/MIX.train"
     },
     "test_emb":
     {
-        "mot17":"./data/mot17.val"
+        "mot17":"./data/MIX.test"
     },
     "test":
     {
-        "mot17":"./data/mot17.val"
+        "mot17":"./data/MIX.test"
     }
 }

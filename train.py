@@ -68,8 +68,7 @@ def train(
         model.cuda().train()
 
         # Set optimizer
-        optimizer = torch.optim.AdamW(filter(lambda x: x.requires_grad, model.parameters()), lr=opt.lr,
-                                      weight_decay=0.01)
+        optimizer = torch.optim.AdamW(filter(lambda x: x.requires_grad, model.parameters()), lr=opt.lr)
 
         start_epoch = checkpoint['epoch'] + 1
         if checkpoint['optimizer'] is not None:
@@ -89,12 +88,10 @@ def train(
         # Set optimizer
         # optimizer = torch.optim.SGD(filter(lambda x: x.requires_grad, model.parameters()), lr=opt.lr, momentum=.9,
         #                             weight_decay=1e-4)
-        optimizer = torch.optim.AdamW(filter(lambda x: x.requires_grad, model.parameters()), lr=opt.lr,
-                                      weight_decay=0.01)
+        optimizer = torch.optim.AdamW(filter(lambda x: x.requires_grad, model.parameters()), lr=opt.lr)
     else:
         model.cuda().train()
-        optimizer = torch.optim.AdamW(filter(lambda x: x.requires_grad, model.parameters()), lr=opt.lr,
-                                      weight_decay=0.01)
+        optimizer = torch.optim.AdamW(filter(lambda x: x.requires_grad, model.parameters()), lr=opt.lr)
 
     model = torch.nn.DataParallel(model)
     # Set scheduler

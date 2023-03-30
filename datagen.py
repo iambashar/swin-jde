@@ -11,26 +11,33 @@ for t in train:
     path = sample_path + t + '/img1/'
     files = os.listdir(os.getcwd() + '/' + path)
     files.sort()
-    train_files += files
+    s = []
+    for f in files:
+        s.append(path + f)
+    train_files += s
 
 with open('data/MIX.train', 'w+') as f:
     for items in train_files:
-        it = path + items
-        f.write('%s\n' %it)
+        f.write('%s\n' %items)
 
 f.close()
 
 test_files = []
+sample_path = 'Datasets/MIX/images/test/'
 
 for t in test:
+    print (t)
     path = sample_path + t + '/img1/'
     files = os.listdir(os.getcwd() + '/' + path)
     files.sort()
-    test_files += files
+    s = []
+    for f in files:
+        s.append(path + f)
+    test_files += s
 
+print(len(test_files))
 with open('data/MIX.test', 'w+') as f:
     for items in test_files:
-        it = path + items
-        f.write('%s\n' %it)
+        f.write('%s\n' %items)
 
 f.close()

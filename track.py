@@ -201,14 +201,18 @@ if __name__ == '__main__':
         data_root = 'MOT17/images/train'
     
     if opt.val_mot17:
-        seqs_str = '''MOT17-01-SDP
-                      MOT17-03-SDP
-                      MOT17-06-SDP
-                      MOT17-07-SDP
-                      MOT17-08-SDP
-                      MOT17-12-SDP
-                      MOT17-14-SDP'''
-        data_root = 'MOT17/images/test'
+        # seqs_str = '''MOT17-01-SDP
+        #               MOT17-03-SDP
+        #               MOT17-06-SDP
+        #               MOT17-07-SDP
+        #               MOT17-08-SDP
+        #               MOT17-12-SDP
+        #               MOT17-14-SDP'''
+        seqs_str = '''KITTI-17
+                      MOT17-10-SDP
+                      ETH-Sunnyday
+                      PETS09-S2L1'''
+        data_root = 'MIX/images/test'
 
     seqs = [seq.strip() for seq in seqs_str.split()]
     main(opt,

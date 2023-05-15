@@ -10,14 +10,14 @@ NUM_ANCHORS = 12
 
 def read_bbox(split='VisDrone2019-MOT-train', if_certain_seq=False, if_norm=False):
 
-    seqs_str = '''MOT17-02-SDP
-                    MOT17-04-SDP
-                    MOT17-05-SDP
+    seqs_str = '''KITTI-13
                     MOT17-09-SDP
-                    MOT17-10-SDP
+                    MOT17-05-SDP
+                    TUD-Campus
+                    TUD-Stadtmitte
                     MOT17-11-SDP
-                    MOT17-13-SDP'''
-    data_root = 'MOT17/labels_with_ids/train'
+                    MOT17-04-SDP'''
+    data_root = 'Datasets/MIX/labels_with_ids/train'
 
     seqs = [seq.strip() for seq in seqs_str.split()]
 
@@ -63,6 +63,7 @@ if __name__ == '__main__':
     print(bbox_wh.shape)
 
     out = kmeans(bbox_wh, NUM_ANCHORS)
+    out.sort()
     print("Accuracy: {:.2f}%".format(avg_iou(bbox_wh, out) * 100))
     print("Boxes:\n {}".format(out))
 

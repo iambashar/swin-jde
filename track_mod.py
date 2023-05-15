@@ -8,7 +8,7 @@ import motmetrics as mm
 import torch
 from tracker.multitracker import JDETracker
 from utils import visualization as vis
-from utils.log import logger
+# from utils.log import logger
 from utils.timer import Timer
 from utils.evaluation import Evaluator
 from utils.parse_config import parse_model_cfg
@@ -35,7 +35,7 @@ def write_results(filename, results, data_type):
                 x2, y2 = x1 + w, y1 + h
                 line = save_format.format(frame=frame_id, id=track_id, x1=x1, y1=y1, x2=x2, y2=y2, w=w, h=h)
                 f.write(line)
-    logger.info('save results to {}'.format(filename))
+    # logger.info('save results to {}'.format(filename))
 
 
 def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_image=True, frame_rate=30):
@@ -81,8 +81,8 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
     results = []
     frame_id = 0
     for path, img, img0 in dataloader:
-        if frame_id % 20 == 0:
-            logger.info('Processing frame {} ({:.2f} fps)'.format(frame_id, 1./max(1e-5, timer.average_time)))
+        # if frame_id % 20 == 0:
+            # logger.info('Processing frame {} ({:.2f} fps)'.format(frame_id, 1./max(1e-5, timer.average_time)))
 
         # run tracking
         timer.tic()
@@ -115,7 +115,7 @@ def eval_seq(opt, dataloader, data_type, result_filename, save_dir=None, show_im
 
 def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), exp_name='demo', 
          save_images=False, save_videos=False, show_image=True):
-    logger.setLevel(logging.INFO)
+    # logger.setLevel(logging.INFO)
     result_root = os.path.join(data_root, '..', 'results', exp_name)
     mkdir_if_missing(result_root)
     data_type = 'mot'
@@ -131,7 +131,7 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
     for seq in seqs:
         output_dir = os.path.join(data_root, '..','outputs', exp_name, seq) if save_images or save_videos else None
 
-        logger.info('start seq: {}'.format(seq))
+        # logger.info('start seq: {}'.format(seq))
         dataloader = datasets.LoadImages(osp.join(data_root, seq, 'img1'), opt.img_size)
         result_filename = os.path.join(result_root, '{}.txt'.format(seq))
         meta_info = open(os.path.join(data_root, seq, 'seqinfo.ini')).read() 
@@ -143,7 +143,7 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
         timer_calls.append(tc)
 
         # eval
-        logger.info('Evaluate seq: {}'.format(seq))
+        # logger.info('Evaluate seq: {}'.format(seq))
         evaluator = Evaluator(data_root, seq, data_type)
         accs.append(evaluator.eval_file(result_filename))
         if save_videos:
@@ -154,19 +154,21 @@ def main(opt, data_root='/data/MOT16/train', det_root=None, seqs=('MOT16-05',), 
     timer_calls = np.asarray(timer_calls)
     all_time = np.dot(timer_avgs, timer_calls)
     avg_time = all_time / np.sum(timer_calls)
-    logger.info('Time elapsed: {:.2f} seconds, FPS: {:.2f}'.format(all_time, 1.0 / avg_time))
+    # logger.info('Time elapsed: {:.2f} seconds, FPS: {:.2f}'.format(all_time, 1.0 / avg_time))
 
     # get summary
     metrics = mm.metrics.motchallenge_metrics
     mh = mm.metrics.create()
     summary = Evaluator.get_summary(accs, seqs, metrics)
+    acc = summary['mota']
     strsummary = mm.io.render_summary(
         summary,
         formatters=mh.formatters,
         namemap=mm.io.motchallenge_metric_names
     )
     print(strsummary)
-    Evaluator.save_summary(summary, os.path.join(result_root, 'summary_{}.xlsx'.format(exp_name)))
+    return acc
+    # Evaluator.save_summary(summary, os.path.join(result_root, 'summary_{}.xlsx'.format(exp_name)))
 
 
 
@@ -188,15 +190,6 @@ if __name__ == '__main__':
     print(opt, end='\n\n')
 
     if opt.train_mot17:
-        seqs_str = '''KITTI-13
-                        MOT17-09-SDP
-                        MOT17-05-SDP
-                        TUD-Campus
-                        TUD-Stadtmitte
-                        MOT17-11-SDP
-                        MOT17-04-SDP'''
-        data_root = 'Datasets/MIX/images/train'
-    elif opt.train_mot17_2:
         seqs_str = '''MOT17-02-SDP
                       MOT17-04-SDP
                       MOT17-05-SDP
@@ -204,28 +197,64 @@ if __name__ == '__main__':
                       MOT17-10-SDP
                       MOT17-11-SDP
                       MOT17-13-SDP'''
-        data_root = 'Datasets/MIX/images/train'
+        data_root = 'MOT17/images/train'
+    elif opt.train_mot17_2:
+        seqs_str = '''MOT17-02-SDP'''
+        data_root = 'MOT17/images/train'
     
     if opt.val_mot17:
-        seqs_str = '''MOT17-01-SDP
-                      MOT17-03-SDP
-                      MOT17-06-SDP
-                      MOT17-07-SDP
-                      MOT17-08-SDP
-                      MOT17-12-SDP
-                      MOT17-14-SDP'''
-        # seqs_str = '''KITTI-17
-        #               MOT17-10-SDP
-        #               ETH-Sunnyday
-        #               PETS09-S2L1'''
+        # seqs_str = '''MOT17-01-SDP
+        #               MOT17-03-SDP
+        #               MOT17-06-SDP
+        #               MOT17-07-SDP
+        #               MOT17-08-SDP
+        #               MOT17-12-SDP
+        #               MOT17-14-SDP'''
+        seqs_str = '''MOT17-10-SDP'''
+                    #   MOT17-10-SDP
+                    #   ETH-Sunnyday
+                    #   PETS09-S2L1'''
         data_root = 'Datasets/MIX/images/test'
 
     seqs = [seq.strip() for seq in seqs_str.split()]
-    main(opt,
-         data_root=data_root,
-         seqs=seqs,
-         exp_name=opt.weights.split('/')[-2],
-         show_image=False,
-         save_images=opt.save_images, 
-         save_videos=opt.save_videos)
+
+    data_point = [0.9, 0.8]
+
+    data_points = [0.3]
+    n = 7
+    res = [[[0]*n]*n]*n
+    final = []
+    prev = 0.0
+    accs = 0.0
+
+    for j in data_point:
+        for k in data_points:
+            opt.iou_thres = 1.0
+            opt.conf_thres = j
+            opt.nms_thres = k
+            print (j, k)
+            prev = float(main(opt,
+                data_root=data_root,
+                seqs=seqs,
+                exp_name=opt.weights.split('/')[-2],
+                show_image=False,
+                save_images=opt.save_images, 
+                save_videos=opt.save_videos))
+            # res[int(i*10.0)][int(10.0*j)][int(10.0*k)] = prev
+            if accs < prev:
+                final += [j, k]
+                accs = prev
+                print ('===============================================================================')
+                print ([j, k])
+                print (accs)
+                print ('===============================================================================')
+    print (final, accs)
+
+    # main(opt,
+    #      data_root=data_root,
+    #      seqs=seqs,
+    #      exp_name=opt.weights.split('/')[-2],
+    #      show_image=False,
+    #      save_images=opt.save_images, 
+    #      save_videos=opt.save_videos)
 

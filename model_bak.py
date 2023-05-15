@@ -185,7 +185,7 @@ class YOLOLayer(nn.Module):
         
 
     def forward(self, p_cat,  img_size, targets=None, classifier=None, test_emb=False):
-        p, p_emb = p_cat[:, :18, ...], p_cat[:, 18:, ...]                              # 24 will replace 18 if we have 3 prediction head
+        p, p_emb = p_cat[:, :24, ...], p_cat[:, 24:, ...]
         nB, nGh, nGw = p.shape[0], p.shape[-2], p.shape[-1]
 
         if self.img_size != img_size:
@@ -195,9 +195,7 @@ class YOLOLayer(nn.Module):
                 self.grid_xy = self.grid_xy.cuda()
                 self.anchor_wh = self.anchor_wh.cuda()
 
-        # print (p.shape)
         p = p.view(nB, self.nA, self.nC + 5, nGh, nGw).permute(0, 1, 3, 4, 2).contiguous()  # prediction
-        # print (p.shape)
         
         p_emb = p_emb.permute(0,2,3,1).contiguous()
         p_box = p[..., :4]
@@ -306,10 +304,9 @@ class Swin_JDE(nn.Module):
         # exit(0)
         for i, (module_def, module) in enumerate(zip(self.module_defs, self.module_list)):
             mtype = module_def['type']
-            # print(f"{mtype}****{x.shape} *** {i}")
             if mtype in ['convolutional', 'upsample', 'maxpool']:
                 x = module(x)
-                
+                # print(f"{mtype}****{x.shape}")
                 layer_outputs.append(x)
 
             elif mtype == 'patch_embedding':
@@ -331,7 +328,6 @@ class Swin_JDE(nn.Module):
             elif mtype == 'layer_norm':  # LayerNorm层
                 x_out = module(x_out)
                 # print (i, x_out.shape)
-
 
                 out = x_out.view(-1, H, W, self.num_features[i]).permute(0, 3, 1, 2).contiguous()
                 # print(f"{mtype}****{out.shape}")
@@ -411,7 +407,6 @@ def load_swin_weights(self, weights):
 
 
     cnt_basic_layer = 0
-    cnt_conv_layer = 0
     cnt_layer_norm = 0
 
 
@@ -455,45 +450,6 @@ def load_swin_weights(self, weights):
             curr_module.load_state_dict(curr_module_state_dict)
 
             cnt_layer_norm += 1
-
-        # elif module_def['type'] == 'convolutional':
-        #     conv_layer = module[0]
-        #     print(f"loading conv_layer{cnt_conv_layer}")
-
-        #     if module_def['batch_normalize']:
-        #         # Load BN bias, weights, running mean and running variance
-        #         bn_layer = module[1]
-        #         num_b = bn_layer.bias.numel()  # Number of biases
-        #         # Bias
-        #         bn_b = torch.from_numpy(weights[ptr:ptr + num_b]).view_as(bn_layer.bias)
-        #         bn_layer.bias.data.copy_(bn_b)
-        #         ptr += num_b
-        #         # Weight
-        #         bn_w = torch.from_numpy(weights[ptr:ptr + num_b]).view_as(bn_layer.weight)
-        #         bn_layer.weight.data.copy_(bn_w)
-        #         ptr += num_b
-        #         # Running Mean
-        #         bn_rm = torch.from_numpy(weights[ptr:ptr + num_b]).view_as(bn_layer.running_mean)
-        #         bn_layer.running_mean.data.copy_(bn_rm)
-        #         ptr += num_b
-        #         # Running Var
-        #         bn_rv = torch.from_numpy(weights[ptr:ptr + num_b]).view_as(bn_layer.running_var)
-        #         bn_layer.running_var.data.copy_(bn_rv)
-        #         ptr += num_b
-        #     else:
-        #         # Load conv. bias
-        #         num_b = conv_layer.bias.numel()
-        #         conv_b = torch.from_numpy(weights[ptr:ptr + num_b]).view_as(conv_layer.bias)
-        #         conv_layer.bias.data.copy_(conv_b)
-        #         ptr += num_b
-        #     # Load conv. weights
-        #     num_w = conv_layer.weight.numel()
-        #     conv_w = torch.from_numpy(weights[ptr:ptr + num_w]).view_as(conv_layer.weight)
-        #     conv_layer.weight.data.copy_(conv_w)
-        #     ptr += num_w
-        #     cnt_conv_layer += 1
-        
-            
 
 
 

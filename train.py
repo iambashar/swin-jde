@@ -80,27 +80,32 @@ def train(
         # Initialize model with backbone (optional)
         if cfg.endswith('swin_b.cfg'):
             load_swin_weights(model, osp.join(weights_from, 'swinb.pth'))
-        else:
+        elif cfg.endswith('swin_s_mod_6.cfg'):
             load_swin_weights(model, osp.join(weights_from, 'swin.pth'))
+        elif cfg.endswith('swin_s_mod_5.cfg'):
+            load_swin_weights(model, osp.join(weights_from, 'best_swin-jde-crowdhuman.pt'))
+        else:
+            load_darknet_weights(model, weights_from)
 
         model.cuda().train()
 
         # Set optimizer
-        # optimizer = torch.optim.SGD(filter(lambda x: x.requires_grad, model.parameters()), lr=opt.lr, momentum=.9,
-        #                             weight_decay=1e-4)
-        optimizer = torch.optim.AdamW(filter(lambda x: x.requires_grad, model.parameters()), lr=opt.lr)
+        optimizer = torch.optim.SGD(filter(lambda x: x.requires_grad, model.parameters()), lr=opt.lr, momentum=.9, weight_decay=1e-4)
+        # optimizer = torch.optim.AdamW(filter(lambda x: x.requires_grad, model.parameters()), lr=opt.lr, weight_decay=5e-3)
     else:
+        print ('Optimizer Adam')
         model.cuda().train()
         optimizer = torch.optim.AdamW(filter(lambda x: x.requires_grad, model.parameters()), lr=opt.lr)
+        # optimizer = torch.optim.SGD(filter(lambda x: x.requires_grad, model.parameters()), lr=opt.lr, momentum=0.9, weight_decay=5e-3)
 
     model = torch.nn.DataParallel(model)
     # Set scheduler
     # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
-    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=10, factor=0.5)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=15, factor=0.75)
     # scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer,
     #                                                  milestones=[int(opt.epochs - 9), int(opt.epochs - 3)],
     #                                                  gamma=0.1)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, epochs)
+    # scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, epochs)
 
     # An important trick for detection: freeze bn during fine-tuning
     if not opt.unfreeze_bn:
@@ -216,7 +221,7 @@ def train(
                         'nT_loss': rloss['nT'], "lr": optimizer.param_groups[0]["lr"], "epoch_time": time.time()-t0})
 
         # Call scheduler.step() after opimizer.step() with pytorch > 1.1.0
-        scheduler.step()
+        scheduler.step(epoch)
 
     
     print('Epoch,   mAP,   R,   P:')

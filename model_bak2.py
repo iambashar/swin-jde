@@ -185,7 +185,7 @@ class YOLOLayer(nn.Module):
         
 
     def forward(self, p_cat,  img_size, targets=None, classifier=None, test_emb=False):
-        p, p_emb = p_cat[:, :18, ...], p_cat[:, 18:, ...]                              # 24 will replace 18 if we have 3 prediction head
+        p, p_emb = p_cat[:, :24, ...], p_cat[:, 24:, ...]
         nB, nGh, nGw = p.shape[0], p.shape[-2], p.shape[-1]
 
         if self.img_size != img_size:
@@ -405,15 +405,27 @@ def create_grids(self, img_size, nGh, nGw):
     self.anchor_vec = self.anchors / self.stride
     self.anchor_wh = self.anchor_vec.view(1, self.nA, 1, 1, 2)
 
-def load_swin_weights(self, weights):
-    check_point = torch.load(weights, map_location='cpu')
-    check_point_state_dict = check_point['state_dict']
-
+def load_swin_weights(self, weight):
+    check_point = torch.load(weight, map_location='cpu')
+    check_point_state_dict = check_point['model']
+    key = list(check_point_state_dict.keys())
+    # print(check_point_state_dict.keys())
 
     cnt_basic_layer = 0
     cnt_conv_layer = 0
     cnt_layer_norm = 0
+    fp = open(weight, 'rb')
+    header = np.fromfile(fp, dtype=np.int32, count=5)  # First five are header values
 
+    # Needed to write header when saving weights
+    self.header_info = header
+
+    self.seen = header[3]  # number of images seen during training
+    weights = np.fromfile(fp, dtype=np.float32)  # The rest are weights
+    fp.close()
+
+    ptr = 0
+    j  = 0
 
     for i, (module_def, module) in enumerate(zip(self.module_defs, self.module_list)):
     
@@ -421,10 +433,10 @@ def load_swin_weights(self, weights):
             print("loading patch embedding layer")
             curr_module = module[0]
             curr_module_state_dict = curr_module.state_dict()
-            prefix = 'backbone.patch_embed.'
 
             for k in curr_module_state_dict.keys():
-                curr_module_state_dict[k] = check_point_state_dict[prefix + k]
+                curr_module_state_dict[k] = check_point_state_dict[key[j]]
+                j += 1
 
             curr_module.load_state_dict(curr_module_state_dict)
 
@@ -433,10 +445,10 @@ def load_swin_weights(self, weights):
         
             curr_module = module[0]
             curr_module_state_dict = curr_module.state_dict()
-            prefix = 'backbone.layers.' + str(cnt_basic_layer) +'.'
 
             for k in curr_module_state_dict.keys():
-                curr_module_state_dict[k] = check_point_state_dict[prefix + k]
+                curr_module_state_dict[k] = check_point_state_dict[key[j]]
+                j += 1
 
             curr_module.load_state_dict(curr_module_state_dict)
 
@@ -447,10 +459,10 @@ def load_swin_weights(self, weights):
         
             curr_module = module[0]
             curr_module_state_dict = curr_module.state_dict()
-            prefix = 'backbone.norm' + str(cnt_layer_norm) + '.'
 
             for k in curr_module_state_dict.keys():
-                curr_module_state_dict[k] = check_point_state_dict[prefix + k]
+                curr_module_state_dict[k] = check_point_state_dict[key[j]]
+                j += 1
 
             curr_module.load_state_dict(curr_module_state_dict)
 
